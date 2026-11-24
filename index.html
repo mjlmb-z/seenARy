@@ -8,8 +8,8 @@
     />
 
     <title>seenARy</title>
-    
-    <link rel="icon" type="image/x-icon" href="./assets/favicon.png">
+
+    <link rel="icon" type="image/x-icon" href="./assets/favicon.png" />
 
     <style>
       :root {
@@ -397,11 +397,16 @@
             fragmentShader: `
               uniform sampler2D map;
               varying vec2 vUv;
+
               void main() {
                 vec4 color = texture2D(map, vUv);
                 float luma = max(color.r, max(color.g, color.b));
-                if (luma < 0.02) discard;
+
+                if (color.a < 0.01 || luma < 0.004) discard;
+
                 gl_FragColor = vec4(color.rgb, color.a);
+
+                #include <colorspace_fragment>
               }
             `,
             transparent: true,
