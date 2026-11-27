@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="en">
   <head>
@@ -220,8 +221,6 @@
           <span class="searchDot"></span>
           <span id="searchText">Searching...</span>
         </p>
-
-        <!-- <p id="bottomLabel" class="label" hidden>Artwork Detected</p> -->
       </div>
     </div>
 
@@ -252,7 +251,6 @@
       const container = $("#container");
       const scanner = $("#scannerText");
       const topLabel = $("#topLabel");
-      // const bottomLabel = $("#bottomLabel");
       const searchText = $("#searchText");
       const errorView = $("#errorView");
 
@@ -263,12 +261,12 @@
       let reverseTexture;
       let endTexture;
       let material;
+      let backgroundMaterial;
 
       function updateUI(detected = false) {
         scanner.hidden = false;
         topLabel.classList.toggle("detected", detected);
         searchText.textContent = detected ? "Artwork Detected" : "Searching...";
-        // bottomLabel.hidden = !detected;
       }
 
       function showError(title, message, permission = false) {
@@ -318,8 +316,25 @@
 
       function setTexture(texture) {
         if (!material || !texture) return;
-
         material.uniforms.map.value = texture;
+      }
+
+      function fadeInBackground() {
+        backgroundMaterial.uniforms.opacity.value = 0;
+
+        const start = performance.now();
+        const duration = 1800;
+
+        function animate(now) {
+          const progress = Math.min((now - start) / duration, 1);
+
+          backgroundMaterial.uniforms.opacity.value =
+            progress * progress * (3 - 2 * progress);
+
+          if (progress < 1) requestAnimationFrame(animate);
+        }
+
+        requestAnimationFrame(animate);
       }
 
       async function launch() {
@@ -383,6 +398,36 @@
           );
           endTexture.colorSpace = THREE.SRGBColorSpace;
 
+          backgroundMaterial = new THREE.ShaderMaterial({
+            uniforms: {
+              opacity: { value: 0 },
+            },
+            vertexShader: `
+              void main() {
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+              }
+            `,
+            fragmentShader: `
+              uniform float opacity;
+
+              void main() {
+                gl_FragColor = vec4(0.945, 0.945, 0.945, opacity);
+              }
+            `,
+            transparent: true,
+            side: THREE.DoubleSide,
+            depthWrite: false,
+            toneMapped: false,
+          });
+
+          const backgroundPlane = new THREE.Mesh(
+            new THREE.PlaneGeometry(1, 1 / CONFIG.artworkAspect),
+            backgroundMaterial,
+          );
+
+          backgroundPlane.position.z = CONFIG.offset;
+          anchor.group.add(backgroundPlane);
+
           material = new THREE.ShaderMaterial({
             uniforms: {
               map: { value: forwardTexture },
@@ -420,7 +465,7 @@
             material,
           );
 
-          plane.position.z = CONFIG.offset;
+          plane.position.z = CONFIG.offset + 0.001;
           anchor.group.add(plane);
 
           forwardVideo.addEventListener("ended", () => {
@@ -436,7 +481,9 @@
 
             reverseVideo.pause();
             forwardVideo.currentTime = 0;
+
             setTexture(forwardTexture);
+            fadeInBackground();
 
             try {
               await forwardVideo.play();
@@ -450,6 +497,8 @@
 
             forwardVideo.pause();
             reverseVideo.currentTime = 0;
+
+            backgroundMaterial.uniforms.opacity.value = 0;
             setTexture(reverseTexture);
 
             reverseVideo.play().catch((error) => {
