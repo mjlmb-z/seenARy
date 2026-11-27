@@ -7,6 +7,6 @@ The s![CAT](https://img.shields.io/badge/CAT-violet)ttered particles, once when 
 <br>
 
 
-<img src="https://github.com/mjlmb-z/seenARy/blob/main/assets/Image%20Target.png" width="30%">
+<img src="https://github.com/mjlmb-z/seenARy/blob/main/assets/Image%20Target.png" width="45%">
 
 Link to the project: [https://mjlmb-z.github.io/seenARy/](https://mjlmb-z.github.io/seenARy/)
